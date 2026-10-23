@@ -1,0 +1,30 @@
+name: Kivi Financial Engine Tests
+on:
+  push:
+    branches: [main, 'kivi/**']
+  pull_request:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Extract integrated financial engine
+        run: |
+          python - <<'PY'
+          import zipfile
+          with zipfile.ZipFile('Kivi_Integrated_Financial_Intelligence_v1.zip') as z:
+              for info in z.infolist():
+                  if info.filename.startswith('/') or '..' in info.filename.split('/'):
+                      raise ValueError('Unsafe archive entry')
+              z.extractall('build')
+          PY
+      - name: Run financial intelligence regression tests
+        working-directory: build/kivi
+        run: python -m unittest discover -s tests -q
+      - name: Verify Python syntax
+        working-directory: build/kivi
+        run: python -m compileall -q kivi_engine
